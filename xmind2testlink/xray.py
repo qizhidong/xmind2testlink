@@ -9,7 +9,7 @@ from xmind2testlink.datatype import TestCase
 
 class xray_issue:
 
-    def create_xray_issue(project_name_key, issue_name, jira_token, importance):
+    def create_xray_issue(project_name_key, issue_name, jira_token, importance, components=None):
         url = "https://olapio.atlassian.net/rest/api/2/issue"
         importance_list = [0, 1, 2, 3]
         if int(importance) not in importance_list:
@@ -21,6 +21,9 @@ class xray_issue:
                        "priority": {"name": "P" + str(importance)},
                        "description": "example of manual test",
                        "issuetype": {"name": "Test"}}}
+        if components:
+            payload['fields']['components'] = [{'name': components}]
+            payload['fields']['assignee'] = [{'id': '5ac2e1fc09ee392b905c0972'}]
         headers = {
             'Authorization': 'Basic ' + jira_token,
             'Content-Type': 'application/json',
@@ -48,9 +51,9 @@ class xray_issue:
         # else:
         #     print('创建步骤成功')
 
-    def create_xray_full_issue(project_name_key, issue_name, test_case, link_issue_key, jira_token, X_acpt):
+    def create_xray_full_issue(project_name_key, issue_name, test_case, link_issue_key, jira_token, X_acpt, components=None):
         # test_case = TestCase(test_case)
-        (id, key) = xray_issue.create_xray_issue(project_name_key, issue_name, jira_token, test_case.importance)
+        (id, key) = xray_issue.create_xray_issue(project_name_key, issue_name, jira_token, test_case.importance, components)
         xray_issue.link_issue(link_issue_key, key, jira_token)
 
         for i in range(len(test_case.steps)):

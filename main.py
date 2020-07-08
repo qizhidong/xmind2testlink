@@ -57,7 +57,7 @@ def get_issue_key(test_case_name):
     return link_issue_key
 
 
-def main(xacpt, jira_token, project_name_key, xmind):
+def main(xacpt, jira_token, project_name_key, xmind, components=None):
     # xacpt = ''
     # jira_token = 'XWGNZ4MgoeD1kfofTelQ72CD'
     # project_name_key = 'QUARD'
@@ -71,7 +71,7 @@ def main(xacpt, jira_token, project_name_key, xmind):
 
             xray_issue.create_xray_full_issue(project_name_key, title_name,
                                               test_case, get_issue_key(test_case_name), jira_token,
-                                              xacpt)
+                                              xacpt, components)
         # for test_case in test_suit
     print()
 
@@ -92,9 +92,17 @@ def init_argument():
 
 if __name__ == '__main__':
     # eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzdlNzExYjU5N2MwYTFjZmRmOTA5MTkiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJRVUFSRC0yNzciLCJpZCI6IjQwNDM0In0sInByb2plY3QiOnsia2V5IjoiUVVBUkQiLCJpZCI6IjEwMDQwIn19fSwiZXhwIjoxNTg3ODczMzMwLCJpYXQiOjE1ODc4NzI0MzB9.1dCncEn8BP0-YL-go1tik7Yh81O3aNfZ8Oal4yXIiY8
-    ARG = init_argument()
-    xacpt = ARG.xacpt
-    jira_token = ARG.token
-    project_name_key = ARG.project
-    xmind = ARG.xmind
-    main(xacpt, jira_token, project_name_key, xmind)
+    # ARG = init_argument()
+    # xacpt = ARG.xacpt
+    # jira_token = ARG.token
+    # project_name_key = ARG.project
+    # xmind = ARG.xmind
+    xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJjb20ueHBhbmRpdC5wbHVnaW5zLnhyYXkiLCJpYXQiOjE1OTE2MjUyOTEsInN1YiI6IjVhYzJlMWZjMDllZTM5MmI5MDVjMDk3MiIsImV4cCI6MTU5MTcxMTY5MSwiYXVkIjpbImNkZWY2OTk3LTk1NDItMzA4OS05MzRjLTQ4NWIxYTcxMTc3ZCJdLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy0zMjA1IiwiaWQiOiI0Mjg4MCJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX19._Xkmtka8UO4Q9xs6DX29CXnYmd-yKsftfk9iRFaWYzQ'
+    jira_token = 'emhpZG9uZy5xaUBreWxpZ2VuY2UuaW86bUVLeUlLV2dtNHIxYkhLY3N3ZzRGMTU1'
+    project_name_key = 'KC'
+    xmind = '/Users/zhidong.qi/Documents/works/kc_testcase/3.2/sprint7/Aha cloud测试用例设计.xmind'
+    # components = 'Kyligence Cloud 2.x'
+    components = 'Test Case | 测试用例'
+    main(xacpt, jira_token, project_name_key, xmind, components)
+    # while True:
+    #     pass
