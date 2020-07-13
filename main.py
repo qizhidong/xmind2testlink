@@ -20,6 +20,23 @@ from xmind2testlink.xmind_parser import xmind_to_suite, xmind_to_flat_dict
 from xmind2testlink.xray import xray_issue
 
 
+csv_title = {
+    'Name': [],
+    'Objective': [],
+    'Precondition': [],
+    'Folder': [],
+    'Status': [],
+    'Priority': [],
+    'Component': [],
+    'Owner': [],
+    'Estimated Time': [],
+    'Labels': [],
+    'Coverage (Issues)': [],
+    'Test Script (Step-by-Step) - Step': [],
+    'Test Script (Step-by-Step) - Test Data': [],
+    'Test Script (Step-by-Step) - Expected Result': [],
+}
+
 
 def xmind_to_testlink(xmind):
     xml_out = xmind[:-5] + 'xml'
@@ -57,21 +74,64 @@ def get_issue_key(test_case_name):
     return link_issue_key
 
 
+def generate_csv_title(xmind):
+    index = str(xmind).find('.', len(xmind)-10)
+    csv_file = ''.join((str(xmind)[:index], '.csv'))
+    with open(csv_file, 'w+') as f:
+        for num, key in enumerate(csv_title.keys()):
+            f.write(key)
+            if num != len(csv_title) - 1:
+                f.write(',')
+            else:
+                f.write('\n')
+    return csv_file
+
+
+def generate_tm4j_csv(csv_file, title_name, test_case, issue_key, component):
+    for key in csv_title.keys():
+        csv_title[key] = []
+    csv_title['Name'].append(title_name)
+    csv_title['Folder'].append(component)
+    csv_title['Status'].append('Draft')
+    if test_case.importance == 1:
+        csv_title['Priority'].append('High')
+    elif test_case.importance == 2:
+        csv_title['Priority'].append('Normal')
+    else:
+        csv_title['Priority'].append('Low')
+    csv_title['Component'].append(component)
+    csv_title['Coverage (Issues)'].append(issue_key)
+    for step in test_case.steps:
+        csv_title['Test Script (Step-by-Step) - Step'].append(''.join(('"', step.action, '"')))
+        csv_title['Test Script (Step-by-Step) - Expected Result'].append(''.join(('"', step.expected, '"')))
+
+    with open(csv_file, 'a+') as f:
+        for i in range(len(test_case.steps)):
+            for j, key in enumerate(csv_title.keys()):
+                if len(csv_title[key]) > i:
+                    f.write(str(csv_title[key][i]))
+                if j != len(csv_title) - 1:
+                    f.write(',')
+                else:
+                    f.write('\n')
+
+
 def main(xacpt, jira_token, project_name_key, xmind, components=None):
     # xacpt = ''
     # jira_token = 'XWGNZ4MgoeD1kfofTelQ72CD'
     # project_name_key = 'QUARD'
     # xmind = '/Users/wei.zhou/Documents/4x版本迭代/spirnt06/Kyligence Enterprise-sprint06.xmind'
     suite = xmind_to_suite(xmind)
+    csv_file = generate_csv_title(xmind)
     for test_suit in suite.sub_suites:
         sub_title = test_suit.name
         for test_case in test_suit.testcase_list:
             test_case_name = test_case.name
             title_name = sub_title + ' > ' + test_case_name
-
-            xray_issue.create_xray_full_issue(project_name_key, title_name,
-                                              test_case, get_issue_key(test_case_name), jira_token,
-                                              xacpt, components)
+            generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
+            # xray_issue.create_xray_full_issue(project_name_key, title_name,
+            #                                   test_case, get_issue_key(test_case_name), jira_token,
+            #                                   xacpt, components)
         # for test_case in test_suit
     print()
 
@@ -100,7 +160,7 @@ if __name__ == '__main__':
     xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJjb20ueHBhbmRpdC5wbHVnaW5zLnhyYXkiLCJpYXQiOjE1OTE2MjUyOTEsInN1YiI6IjVhYzJlMWZjMDllZTM5MmI5MDVjMDk3MiIsImV4cCI6MTU5MTcxMTY5MSwiYXVkIjpbImNkZWY2OTk3LTk1NDItMzA4OS05MzRjLTQ4NWIxYTcxMTc3ZCJdLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy0zMjA1IiwiaWQiOiI0Mjg4MCJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX19._Xkmtka8UO4Q9xs6DX29CXnYmd-yKsftfk9iRFaWYzQ'
     jira_token = 'emhpZG9uZy5xaUBreWxpZ2VuY2UuaW86bUVLeUlLV2dtNHIxYkhLY3N3ZzRGMTU1'
     project_name_key = 'KC'
-    xmind = '/Users/zhidong.qi/Documents/works/kc_testcase/3.2/sprint7/Aha cloud测试用例设计.xmind'
+    xmind = '/Users/zhidong.qi/Documents/works/kc_testcase/3.2/sprint8/KC-Sprint8_本地用户.xmind'
     # components = 'Kyligence Cloud 2.x'
     components = 'Test Case | 测试用例'
     main(xacpt, jira_token, project_name_key, xmind, components)
