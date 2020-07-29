@@ -13,7 +13,7 @@ Example:
 """
 
 import json
-import sys, argparse
+import sys, argparse, time
 
 from xmind2testlink.testlink_parser import to_testlink_xml_file
 from xmind2testlink.xmind_parser import xmind_to_suite, xmind_to_flat_dict
@@ -122,16 +122,16 @@ def main(xacpt, jira_token, project_name_key, xmind, components=None):
     # project_name_key = 'QUARD'
     # xmind = '/Users/wei.zhou/Documents/4x版本迭代/spirnt06/Kyligence Enterprise-sprint06.xmind'
     suite = xmind_to_suite(xmind)
-    csv_file = generate_csv_title(xmind)
+    # csv_file = generate_csv_title(xmind)
     for test_suit in suite.sub_suites:
         sub_title = test_suit.name
         for test_case in test_suit.testcase_list:
             test_case_name = test_case.name
             title_name = sub_title + ' > ' + test_case_name
-            generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
-            # xray_issue.create_xray_full_issue(project_name_key, title_name,
-            #                                   test_case, get_issue_key(test_case_name), jira_token,
-            #                                   xacpt, components)
+            # generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
+            xray_issue.create_xray_full_issue(project_name_key, title_name,
+                                              test_case, get_issue_key(test_case_name), jira_token,
+                                              xacpt, sub_title)
         # for test_case in test_suit
     print()
 
@@ -157,12 +157,13 @@ if __name__ == '__main__':
     # jira_token = ARG.token
     # project_name_key = ARG.project
     # xmind = ARG.xmind
-    xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJjb20ueHBhbmRpdC5wbHVnaW5zLnhyYXkiLCJpYXQiOjE1OTE2MjUyOTEsInN1YiI6IjVhYzJlMWZjMDllZTM5MmI5MDVjMDk3MiIsImV4cCI6MTU5MTcxMTY5MSwiYXVkIjpbImNkZWY2OTk3LTk1NDItMzA4OS05MzRjLTQ4NWIxYTcxMTc3ZCJdLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy0zMjA1IiwiaWQiOiI0Mjg4MCJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX19._Xkmtka8UO4Q9xs6DX29CXnYmd-yKsftfk9iRFaWYzQ'
+    xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00MTYwIiwiaWQiOiI0NzU2MyJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5NTg2MjcxNCwiaWF0IjoxNTk1ODYxODE0fQ.Os-x059yOSIteeX6XrN172qJD7FhIY1J7krOr0epqOE'
     jira_token = 'emhpZG9uZy5xaUBreWxpZ2VuY2UuaW86bUVLeUlLV2dtNHIxYkhLY3N3ZzRGMTU1'
     project_name_key = 'KC'
-    xmind = '/Users/zhidong.qi/Documents/works/kc_testcase/3.2/sprint8/KC-Sprint8_本地用户.xmind'
+    xmind = '/Users/zhidong.qi/Documents/works/kc_testcase/3.2/sprint9/KC-Sprint9_backup_config.xmind'
     # components = 'Kyligence Cloud 2.x'
     components = 'Test Case | 测试用例'
+
     main(xacpt, jira_token, project_name_key, xmind, components)
-    # while True:
-    #     pass
+    # local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+    # print(local_time)
