@@ -17,7 +17,7 @@ import sys, argparse, time
 
 from xmind2testlink.testlink_parser import to_testlink_xml_file
 from xmind2testlink.xmind_parser import xmind_to_suite, xmind_to_flat_dict
-from xmind2testlink.xray import xrayIssue
+from xmind2testlink.xray import XrayIssue
 
 
 csv_title = {
@@ -116,23 +116,27 @@ def generate_tm4j_csv(csv_file, title_name, test_case, issue_key, component):
                     f.write('\n')
 
 
-def main(xacpt, jira_token, project_name_key, xmind, components=None):
+def main(xacpt, jira_token, project_name_key, xmind):
     # xacpt = ''
     # jira_token = 'XWGNZ4MgoeD1kfofTelQ72CD'
     # project_name_key = 'QUARD'
     # xmind = '/Users/wei.zhou/Documents/4x版本迭代/spirnt06/Kyligence Enterprise-sprint06.xmind'
     suite = xmind_to_suite(xmind)
-    xray_issue = xrayIssue()
+    xray_issue = XrayIssue(xacpt, jira_token)
+    xray_issue.get_folder_id(project_name_key)
     # csv_file = generate_csv_title(xmind)
     for test_suit in suite.sub_suites:
-        sub_title = test_suit.name
+        components = test_suit.name
+        issue_ids = []
         for test_case in test_suit.testcase_list:
             test_case_name = test_case.name
-            title_name = sub_title + ' > ' + test_case_name
+            title_name = components + ' > ' + test_case_name
             # generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
-            xray_issue.create_xray_full_issue(project_name_key, title_name,
-                                              test_case, get_issue_key(test_case_name), jira_token,
-                                              xacpt, sub_title)
+            issue_id = xray_issue.create_xray_full_issue(project_name_key, title_name, test_case,
+                                                         get_issue_key(test_case_name), components)
+            issue_ids.append(issue_id)
+        xray_issue.move_issue_to_folder(issue_ids, project_name_key, components)
+
         # for test_case in test_suit
     print()
 
@@ -158,7 +162,7 @@ if __name__ == '__main__':
     # jira_token = ARG.token
     # project_name_key = ARG.project
     # xmind = ARG.xmind
-    xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00ODMxIiwiaWQiOiI1MDE2NCJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5OTgyMDUyNSwiaWF0IjoxNTk5ODE5NjI1fQ.rJ7GAHUFor71cZWUt6pQ2lv1Vw4J-Bn5aCAWXvSXoxI'
+    xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00OTczIiwiaWQiOiI1MTQ4NyJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5OTgyNDQwMSwiaWF0IjoxNTk5ODIzNTAxfQ.D22BatGTykhwtrNHiCwbVmBWA7Oh5ygMnKLiv0bOH2E'
     jira_token = 'emhpZG9uZy5xaUBreWxpZ2VuY2UuaW86bUVLeUlLV2dtNHIxYkhLY3N3ZzRGMTU1'
     # xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00NDg2IiwiaWQiOiI0ODM4MiJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5ODM0MDA1NywiaWF0IjoxNTk4MzM5MTU3fQ.m_-eKNbM1dZnxZmZ5yWabUTndsqj6s0UxnoFwLUIPRE'
     # jira_token = 'ZXJqaW9uZy56aGFuZ0BreWxpZ2VuY2UuaW86VjJ2ZTdBZm5ZRjRVcmlENXBHVEhFRDlB'
@@ -167,6 +171,6 @@ if __name__ == '__main__':
     # components = 'Kyligence Cloud 2.x'
     components = 'Test Case | 测试用例'
 
-    main(xacpt, jira_token, project_name_key, xmind, components)
+    main(xacpt, jira_token, project_name_key, xmind)
     local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     # print(local_time)
