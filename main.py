@@ -141,6 +141,10 @@ def main(xacpt, jira_token, project_name_key, xmind):
     print()
 
 
+def xmindtest(xmind):
+    xmind_to_suite(xmind)
+
+
 def init_argument():
     parser = argparse.ArgumentParser()
     parser.add_argument('--xacpt', required=True,
@@ -163,13 +167,9 @@ if __name__ == '__main__':
     # project_name_key = ARG.project
     # xmind = ARG.xmind
     xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00OTczIiwiaWQiOiI1MTQ4NyJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5OTgyNDQwMSwiaWF0IjoxNTk5ODIzNTAxfQ.D22BatGTykhwtrNHiCwbVmBWA7Oh5ygMnKLiv0bOH2E'
-    jira_token = 'emhpZG9uZy5xaUBreWxpZ2VuY2UuaW86bUVLeUlLV2dtNHIxYkhLY3N3ZzRGMTU1'
-    # xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00NDg2IiwiaWQiOiI0ODM4MiJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5ODM0MDA1NywiaWF0IjoxNTk4MzM5MTU3fQ.m_-eKNbM1dZnxZmZ5yWabUTndsqj6s0UxnoFwLUIPRE'
-    # jira_token = 'ZXJqaW9uZy56aGFuZ0BreWxpZ2VuY2UuaW86VjJ2ZTdBZm5ZRjRVcmlENXBHVEhFRDlB'
+    jira_token = ''
     project_name_key = 'KC'
-    xmind = '/Users/zhidong.qi/Documents/works/kc_testcase/3.2/sprint10/KC-Sprint10_test.xmind'
-    # components = 'Kyligence Cloud 2.x'
-    components = 'Test Case | 测试用例'
+    xmind = ''
 
     main(xacpt, jira_token, project_name_key, xmind)
     local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
