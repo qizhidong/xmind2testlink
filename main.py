@@ -116,7 +116,7 @@ def generate_tm4j_csv(csv_file, title_name, test_case, issue_key, component):
                     f.write('\n')
 
 
-def main(xacpt, jira_token, project_name_key, xmind):
+def main(xacpt, jira_token, project_name_key, xmind, ke_product_line=None):
     # xacpt = ''
     # jira_token = 'XWGNZ4MgoeD1kfofTelQ72CD'
     # project_name_key = 'QUARD'
@@ -130,10 +130,10 @@ def main(xacpt, jira_token, project_name_key, xmind):
         issue_ids = []
         for test_case in test_suit.testcase_list:
             test_case_name = test_case.name
-            title_name = components + ' > ' + test_case_name
+            title_name = test_suit.name + ' > ' + test_case_name
             # generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
             issue_id = xray_issue.create_xray_full_issue(project_name_key, title_name, test_case,
-                                                         get_issue_key(test_case_name), components)
+                                                         get_issue_key(test_case_name), components, ke_product_line)
             issue_ids.append(issue_id)
         xray_issue.move_issue_to_folder(issue_ids, project_name_key, components)
 
@@ -166,11 +166,12 @@ if __name__ == '__main__':
     # jira_token = ARG.token
     # project_name_key = ARG.project
     # xmind = ARG.xmind
-    xacpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00OTczIiwiaWQiOiI1MTQ4NyJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5OTgyNDQwMSwiaWF0IjoxNTk5ODIzNTAxfQ.D22BatGTykhwtrNHiCwbVmBWA7Oh5ygMnKLiv0bOH2E'
+    xacpt = ''
     jira_token = ''
-    project_name_key = 'KC'
+    project_name_key = 'KE'
     xmind = ''
+    ke_product_line = '4x'
 
-    main(xacpt, jira_token, project_name_key, xmind)
+    main(xacpt, jira_token, project_name_key, xmind, ke_product_line)
     local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     # print(local_time)

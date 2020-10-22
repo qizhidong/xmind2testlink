@@ -26,7 +26,7 @@ class XrayIssue:
             'MDX': '10023',
         }
 
-    def create_xray_issue(self, project_name_key, issue_name, importance, components=None):
+    def create_xray_issue(self, project_name_key, issue_name, importance, components=None, product_line=None):
         url = "https://olapio.atlassian.net/rest/api/2/issue"
         importance_list = [0, 1, 2, 3]
         if int(importance) not in importance_list:
@@ -43,9 +43,11 @@ class XrayIssue:
                 'assignee': [],
             }
         }
-        if components:
+        if project_name_key == "KC":
             payload['fields']['components'].append({'name': components})
             payload['fields']['assignee'].append({'id': '5ac2e1fc09ee392b905c0972'})
+        if project_name_key == "KE":
+            payload['fields']['customfield_10048'] = [{'value': product_line}]
 
         response = requests.request("POST", url, headers=self.jira_headers, data=json.dumps(payload))
         if response.status_code >= 400:
@@ -68,10 +70,11 @@ class XrayIssue:
         # else:
         #     print('创建步骤成功')
 
-    def create_xray_full_issue(self, project_name_key, issue_name, test_case, link_issue_key, components):
+    def create_xray_full_issue(self, project_name_key, issue_name, test_case,
+                               link_issue_key, components, ke_product_line):
         # test_case = TestCase(test_case)
         (issue_id, issue_key) = self.create_xray_issue(project_name_key, issue_name,
-                                                       test_case.importance, components)
+                                                       test_case.importance, components, ke_product_line)
         self.link_issue(link_issue_key, issue_key)
         # self.get_folder_id(project_name_key)
         for i in range(len(test_case.steps)):
