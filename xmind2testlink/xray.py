@@ -31,20 +31,27 @@ class XrayIssue:
             False: 'No',
         }
 
+        self.is_need_quard = {
+            True: 'Yes',
+            False: 'No',
+        }
+
         self.testcase_type = {
             '主流程用例': '主流程用例',
             '分支用例': '分支用例',
             'UED用例': 'UED用例',
             '波及功能用例': '波及功能用例',
         }
+        self.srcum_team_jira_type = 'customfield_10089'
 
-    def create_xray_issue(self, project_name_key, issue_name, importance, components=None,
-                          is_smoketest=False, testcase_type='主流程用例'):
+    def create_xray_issue(self, project_name_key, issue_name, importance, link_issue_key,
+                          components=None, is_smoketest=False, is_need_quard=False, testcase_type='主流程用例'):
         url = "https://olapio.atlassian.net/rest/api/2/issue"
         importance_list = [0, 1, 2, 3]
         if int(importance) not in importance_list:
             importance = 3
         issue_name = str(issue_name).replace('\r\n', '')
+        link_issue_scrum_team_id = self.get_issue_scrum_team_id(link_issue_key)
         payload = {
             "fields": {
                 "project": {"key": project_name_key},
@@ -56,6 +63,8 @@ class XrayIssue:
                 'assignee': [],
                 'customfield_10137': {'value': self.is_smoketest[is_smoketest]},
                 'customfield_10139': {'value': self.testcase_type[testcase_type]},
+                self.srcum_team_jira_type: {'id': link_issue_scrum_team_id},
+                'customfield_10145': {'value': self.is_need_quard[is_need_quard]},
             }
         }
         if project_name_key == "KC":
@@ -84,10 +93,11 @@ class XrayIssue:
         #     print('创建步骤成功')
 
     def create_xray_full_issue(self, project_name_key, issue_name, test_case, link_issue_key,
-                               components, is_smoketest, testcase_type):
+                               components, is_smoketest, is_need_quard, testcase_type):
         # test_case = TestCase(test_case)
         (issue_id, issue_key) = self.create_xray_issue(project_name_key, issue_name, test_case.importance,
-                                                       components, is_smoketest, testcase_type)
+                                                       link_issue_key, components, is_smoketest,
+                                                       is_need_quard, testcase_type)
         self.link_issue(link_issue_key, issue_key)
         # self.get_folder_id(project_name_key)
         for i in range(len(test_case.steps)):
@@ -130,16 +140,18 @@ class XrayIssue:
         response = requests.request("POST", url, headers=self.jira_headers, data=json.dumps(payload))
         # return response.json()['id']
 
-    def get_issue_info(self):
-        import requests
+    def get_issue_scrum_team_id(self, issue_key):
+        res = self.get_issue_info(issue_key)
+        return res.get('fields').get(self.srcum_team_jira_type).get('id')
 
-        url = "https://olapio.atlassian.net/rest/api/2/issue/QUARD-263"
+    def get_issue_info(self, issue_key):
+        url = "https://olapio.atlassian.net/rest/api/2/issue/{}".format(issue_key)
 
         payload = {}
 
         response = requests.request("GET", url, headers=self.jira_headers, data=payload)
 
-        print(response.text.encode('utf8'))
+        return json.loads(response.content)
 
 
 # create_xray_full_issue()

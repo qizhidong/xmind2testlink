@@ -117,7 +117,7 @@ def generate_tm4j_csv(csv_file, title_name, test_case, issue_key, component):
 
 
 def main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
-         testcase_type, folder_name=None):
+         is_need_quard, testcase_type, folder_name=None):
     # xacpt = ''
     # jira_token = 'XWGNZ4MgoeD1kfofTelQ72CD'
     # project_name_key = 'QUARD'
@@ -135,7 +135,7 @@ def main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
             # generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
             issue_id = xray_issue.create_xray_full_issue(project_name_key, title_name, test_case,
                                                          get_issue_key(test_case_name), components,
-                                                         is_smoketest, testcase_type)
+                                                         is_smoketest, is_need_quard, testcase_type)
             issue_ids.append(issue_id)
         forder_name = components if folder_name is None else folder_name
         xray_issue.move_issue_to_folder(issue_ids, project_name_key, forder_name)
@@ -176,11 +176,12 @@ if __name__ == '__main__':
     xmind = ''
     # True False
     is_smoketest = False
+    is_need_quard = False
     # '主流程用例' '分支用例' 'UED用例' '波及功能用例'
     testcase_type = '主流程用例'
     # 在test repository下某个目录的名称
     folder_name = None
 
-    main(xacpt, jira_token, project_name_key, xmind, is_smoketest, testcase_type, folder_name)
+    main(xacpt, jira_token, project_name_key, xmind, is_smoketest, is_need_quard, testcase_type, folder_name)
     # local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     # print(local_time)
