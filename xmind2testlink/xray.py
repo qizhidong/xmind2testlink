@@ -50,7 +50,7 @@ class XrayIssue:
         importance_list = [0, 1, 2, 3]
         if int(importance) not in importance_list:
             importance = 3
-        issue_name = str(issue_name).replace('\r\n', '')
+        issue_name = str(issue_name).replace('\r\n', '').replace('\r', '').replace('\n', '')
         link_issue_scrum_team_id = self.get_issue_scrum_team_id(link_issue_key)
         payload = {
             "fields": {

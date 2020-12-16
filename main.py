@@ -13,7 +13,7 @@ Example:
 """
 
 import json
-import sys, argparse, time
+import sys, argparse, time, os, traceback
 
 from xmind2testlink.testlink_parser import to_testlink_xml_file
 from xmind2testlink.xmind_parser import xmind_to_suite, xmind_to_flat_dict
@@ -117,7 +117,7 @@ def generate_tm4j_csv(csv_file, title_name, test_case, issue_key, component):
 
 
 def main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
-         is_need_quard, testcase_type, folder_name=None):
+         is_need_quard, testcase_type, folder_name=None, error_case_file=None):
     # xacpt = ''
     # jira_token = 'XWGNZ4MgoeD1kfofTelQ72CD'
     # project_name_key = 'QUARD'
@@ -126,6 +126,11 @@ def main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
     xray_issue = XrayIssue(xacpt, jira_token)
     xray_issue.get_folder_id(project_name_key)
     # csv_file = generate_csv_title(xmind)
+    error_case_file = '/tmp/error_case_file.txt' if error_case_file is None else error_case_file
+    if os.path.isdir(error_case_file):
+        error_case_file = os.path.join(error_case_file, 'error_case_file.txt')
+    if os.path.exists(error_case_file):
+        os.remove(error_case_file)
     for test_suit in suite.sub_suites:
         components = test_suit.name
         issue_ids = []
@@ -133,12 +138,21 @@ def main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
             test_case_name = test_case.name
             title_name = test_suit.name + ' > ' + test_case_name
             # generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
-            issue_id = xray_issue.create_xray_full_issue(project_name_key, title_name, test_case,
-                                                         get_issue_key(test_case_name), components,
-                                                         is_smoketest, is_need_quard, testcase_type)
-            issue_ids.append(issue_id)
-        forder_name = components if folder_name is None else folder_name
-        xray_issue.move_issue_to_folder(issue_ids, project_name_key, forder_name)
+            try:
+                issue_id = xray_issue.create_xray_full_issue(project_name_key, title_name, test_case,
+                                                             get_issue_key(test_case_name), components,
+                                                             is_smoketest, is_need_quard, testcase_type)
+            except Exception:
+                issue_id = None
+                with open(error_case_file, 'a+') as f:
+                    f.write('{} create failed\n'.format(test_case_name))
+                traceback.format_exc()
+            if issue_id:
+                forder_name = components if folder_name is None else folder_name
+                xray_issue.move_issue_to_folder([issue_id], project_name_key, forder_name)
+        #     issue_ids.append(issue_id)
+        # forder_name = components if folder_name is None else folder_name
+        # xray_issue.move_issue_to_folder(issue_ids, project_name_key, forder_name)
 
         # for test_case in test_suit
     print()
@@ -181,7 +195,9 @@ if __name__ == '__main__':
     testcase_type = '主流程用例'
     # 在test repository下某个目录的名称
     folder_name = None
+    error_case_file = None
 
-    main(xacpt, jira_token, project_name_key, xmind, is_smoketest, is_need_quard, testcase_type, folder_name)
+    main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
+         is_need_quard, testcase_type, folder_name, error_case_file)
     # local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     # print(local_time)
