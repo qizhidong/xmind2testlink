@@ -74,6 +74,10 @@ def get_issue_key(test_case_name):
     return link_issue_key
 
 
+def get_compenent(test_suite_name):
+    return str(test_suite_name).split('/')[-1]
+
+
 def generate_csv_title(xmind):
     index = str(xmind).find('.', len(xmind)-10)
     csv_file = ''.join((str(xmind)[:index], '.csv'))
@@ -117,14 +121,17 @@ def generate_tm4j_csv(csv_file, title_name, test_case, issue_key, component):
 
 
 def main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
-         is_need_quard, testcase_type, folder_name=None, error_case_file=None):
+         is_need_quard, testcase_type, folder_name=None, error_case_file=None,
+         xray_client_id=None, xray_client_key=None):
     # xacpt = ''
     # jira_token = 'XWGNZ4MgoeD1kfofTelQ72CD'
     # project_name_key = 'QUARD'
     # xmind = '/Users/wei.zhou/Documents/4x版本迭代/spirnt06/Kyligence Enterprise-sprint06.xmind'
     suite = xmind_to_suite(xmind)
-    xray_issue = XrayIssue(xacpt, jira_token)
-    xray_issue.get_folder_id(project_name_key)
+    xray_issue = XrayIssue(xacpt, jira_token, xray_client_id, xray_client_key)
+    if xacpt != '':
+        xray_issue.get_folder_id(project_name_key)
+
     # csv_file = generate_csv_title(xmind)
     error_case_file = '/tmp/error_case_file.txt' if error_case_file is None else error_case_file
     if os.path.isdir(error_case_file):
@@ -132,29 +139,44 @@ def main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
     if os.path.exists(error_case_file):
         os.remove(error_case_file)
     for test_suit in suite.sub_suites:
-        components = test_suit.name
-        issue_ids = []
-        for test_case in test_suit.testcase_list:
-            test_case_name = test_case.name
-            title_name = test_suit.name + ' > ' + test_case_name
-            # generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
-            try:
-                issue_id = xray_issue.create_xray_full_issue(project_name_key, title_name, test_case,
-                                                             get_issue_key(test_case_name), components,
-                                                             is_smoketest, is_need_quard, testcase_type)
-            except Exception:
-                issue_id = None
+        if xray_client_id is None and xray_client_key is None and xacpt != '':
+            components = test_suit.name
+            for test_case in test_suit.testcase_list:
+                test_case_name = test_case.name
+                title_name = test_suit.name + ' > ' + test_case_name
+                # generate_tm4j_csv(csv_file, title_name, test_case, get_issue_key(test_case_name), sub_title)
+                try:
+                    issue_id = xray_issue.create_xray_full_issue(project_name_key, title_name, test_case,
+                                                                 get_issue_key(test_case_name), components,
+                                                                 is_smoketest, is_need_quard, testcase_type)
+                except Exception:
+                    issue_id = None
+                    with open(error_case_file, 'a+') as f:
+                        f.write('{} create failed\n'.format(test_case_name))
+                    traceback.format_exc()
+                if issue_id:
+                    forder_name = components if folder_name is None else folder_name
+                    xray_issue.move_issue_to_folder([issue_id], project_name_key, forder_name)
+        elif xray_client_id is not None and xray_client_key is not None:
+            components = get_compenent(test_suit.name)
+            bulk_json_arr = []
+            for test_case in test_suit.testcase_list:
+                test_case_name = test_case.name
+                title_name = components + ' > ' + test_case_name
+                bulk_json = xray_issue.generate_bulk_json(project_name_key, title_name, test_case,
+                                                          get_issue_key(test_case_name), components,
+                                                          is_smoketest, is_need_quard, testcase_type, test_suit.name)
+                bulk_json_arr.append(bulk_json)
+            job_id = xray_issue.bulk_xray_issue(bulk_json_arr)
+            print(job_id)
+            result = xray_issue.await_import_bulk_xray_issue(job_id)
+            print(result)
+            if result.get('result').get('errors'):
                 with open(error_case_file, 'a+') as f:
-                    f.write('{} create failed\n'.format(test_case_name))
-                traceback.format_exc()
-            if issue_id:
-                forder_name = components if folder_name is None else folder_name
-                xray_issue.move_issue_to_folder([issue_id], project_name_key, forder_name)
-        #     issue_ids.append(issue_id)
-        # forder_name = components if folder_name is None else folder_name
-        # xray_issue.move_issue_to_folder(issue_ids, project_name_key, forder_name)
-
-        # for test_case in test_suit
+                    for error in result.get('result').get('errors'):
+                        f.write('{} create failed. '.format(bulk_json_arr[error.get('elementNumber')].
+                                                            get('fields').get('summary')))
+                        f.write('The reason is {}!\n'.format(error.get('errors')))
     print()
 
 
@@ -164,27 +186,38 @@ def xmindtest(xmind):
 
 def init_argument():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--xacpt', required=True,
-                        help="访问 https://olapio.atlassian.net/browse/QUARD-277 =》浏览器按F12 或者右击检查=> 搜索 `testStepFields` 对应的请求（Request headers）字段X-acpt对应的值")
-    parser.add_argument('--token', default="d2VpLnpob3VAa3lsaWdlbmNlLmlvOm8xeGh0M2owSVdheUdxWWx4bUUwNzU2Rg==",
-                        help="默认使用代码者的KEY,建议改成自己的,通过jira 链接 https://id.atlassian.com/manage-profile/security/api-tokens 申请到自己的token,在base64编码 https://www.blitter.se/utils/basic-authentication-header-generator")
-    parser.add_argument('--project', default='KE',
+    parser.add_argument('--xacpt', required=False,
+                        help="访问 https://olapio.atlassian.net/browse/QUARD-277 =》浏览器按F12 或者右击检查=> 搜索 "
+                             "`testStepFields` 对应的请求（Request headers）字段X-acpt对应的值")
+    parser.add_argument('--token', required=True,
+                        help="默认使用代码者的KEY,建议改成自己的,通过jira 链接 https://id.atlassian.com/manage-profile"
+                             "/security/api-tokens 申请到自己的token,在base64编码 https://www.blitter.se"
+                             "/utils/basic-authentication-header-generator")
+    parser.add_argument('--project', required=True,
                         help="默认使用KE，访问 https://olapio.atlassian.net/projects 拿到对应项目的key")
     parser.add_argument('--xmind', required=True,
-                        help="你的xmind的文件的全路径。for example：/Users/wei.zhou/Documents/4x版本迭代/spirnt06/Kyligence Enterprise-sprint06.xmind")
+                        help="你的xmind的文件的全路径。for example：/Users/wei.zhou/Documents/4x版本迭代/spirnt06/Kyligence "
+                             "Enterprise-sprint06.xmind")
+    parser.add_argument('--cid', required=False,
+                        help="询问jira管理员（永强），创建对应xray client id和对应的xray client key")
+    parser.add_argument('--ckey', required=False,
+                        help="询问jira管理员（永强），创建对应xray client id和对应的xray client key")
     args = parser.parse_args()
     return args
 
 
 if __name__ == '__main__':
-    # eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzdlNzExYjU5N2MwYTFjZmRmOTA5MTkiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJRVUFSRC0yNzciLCJpZCI6IjQwNDM0In0sInByb2plY3QiOnsia2V5IjoiUVVBUkQiLCJpZCI6IjEwMDQwIn19fSwiZXhwIjoxNTg3ODczMzMwLCJpYXQiOjE1ODc4NzI0MzB9.1dCncEn8BP0-YL-go1tik7Yh81O3aNfZ8Oal4yXIiY8
     # ARG = init_argument()
-    # xacpt = ARG.xacpt
+    # xacpt = ARG.xacpt if ARG.xacpt else ''
     # jira_token = ARG.token
     # project_name_key = ARG.project
     # xmind = ARG.xmind
+    # client_id = ARG.cid if ARG.cid else None
+    # client_key = ARG.ckey if ARG.ckey else None
     xacpt = ''
     jira_token = ''
+    client_id = None
+    client_key = None
     # KC KE KI MDX
     project_name_key = 'KE'
     xmind = ''
@@ -198,6 +231,7 @@ if __name__ == '__main__':
     error_case_file = None
 
     main(xacpt, jira_token, project_name_key, xmind, is_smoketest,
-         is_need_quard, testcase_type, folder_name, error_case_file)
+         is_need_quard, testcase_type, folder_name, error_case_file,
+         client_id, client_key)
     # local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     # print(local_time)

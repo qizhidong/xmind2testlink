@@ -2,13 +2,15 @@
 # encoding: utf-8
 
 
-import requests, json
+import requests
+import json
+import time
 
 from xmind2testlink.datatype import TestCase
 
 
 class XrayIssue:
-    def __init__(self, x_acpt, jira_token):
+    def __init__(self, x_acpt, jira_token, xray_client_id=None, xray_client_key=None):
         self.xray_headers = {
             'X-acpt': x_acpt,
             'Content-Type': 'application/json;charset=UTF-8',
@@ -43,6 +45,122 @@ class XrayIssue:
             '波及功能用例': '波及功能用例',
         }
         self.srcum_team_jira_type = 'customfield_10089'
+        self.xray_client_id = xray_client_id
+        self.xray_client_key = xray_client_key
+        if self.xray_client_id is not None and self.xray_client_key is not None:
+            self.xray_token = self.xray_auth()
+            self.bulk_xray_headers = {
+                'Authorization': 'Bearer ' + self.xray_token,
+                'Content-Type': 'application/json;charset=UTF-8',
+            }
+
+    def xray_auth(self):
+        auth_url = 'https://xray.cloud.xpand-it.com/api/v1/authenticate'
+        auth_payload = {
+            'client_id': self.xray_client_id,
+            'client_secret': self.xray_client_key,
+        }
+        res = requests.post(auth_url, json=auth_payload)
+        return json.loads(res.content)
+
+    def generate_bulk_json(self, project_name_key, issue_name, test_case, link_issue_key,
+                           components, is_smoketest, is_need_quard, testcase_type, forder):
+        importance_list = [0, 1, 2, 3]
+        importance = 3 if int(test_case.importance) not in importance_list else int(test_case.importance)
+        issue_name = str(issue_name).replace('\r\n', '').replace('\r', '').replace('\n', '')
+        link_issue_scrum_team_id = self.get_issue_scrum_team_id(link_issue_key)
+        steps = []
+        for step in test_case.steps:
+            step_json = dict()
+            step_json['action'] = step.action
+            step_json['data'] = ''
+            step_json['result'] = step.expected
+            steps.append(step_json)
+        bulk_json = {
+            'testtype': 'Manual',
+            'fields': {
+                'summary': issue_name,
+                'project': {'key': project_name_key},
+                'priority': {'name': 'P' + str(importance)},
+                'description': 'example of manual test',
+                'issuetype': {'name': 'Test'},
+                'components': [],
+                'assignee': [],
+                'customfield_10137': {'value': self.is_smoketest[is_smoketest]},
+                'customfield_10139': {'value': self.testcase_type[testcase_type]},
+                self.srcum_team_jira_type: {'id': link_issue_scrum_team_id},
+                'customfield_10145': {'value': self.is_need_quard[is_need_quard]},
+            },
+            'update': {
+                'issuelinks': [
+                    {
+                        'add': {
+                            'type': {
+                                'name': 'Test'
+                            },
+                            'outwardIssue': {
+                                'key': link_issue_key,
+                            }
+                        }
+                    }
+                ]
+            },
+            'steps': steps,
+            'xray_test_repository_folder': forder,
+        }
+        if project_name_key == "KC":
+            bulk_json['fields']['components'].append({'name': components})
+            bulk_json['fields']['assignee'].append({'id': '5ac2e1fc09ee392b905c0972'})
+        return bulk_json
+
+    def bulk_xray_issue(self, bulk_json_arr):
+        bulk_url = 'https://xray.cloud.xpand-it.com/api/v1/import/test/bulk'
+
+        try:
+            self.xray_token = self.xray_auth()
+            res = requests.post(bulk_url, json=bulk_json_arr, headers=self.bulk_xray_headers)
+            return json.loads(res.content).get('jobId')
+        except Exception as e:
+            print('Bulk import xray issue failed {}'.format(e))
+
+    def check_bulk_issue_status(self, job_id):
+        """
+
+        :param job_id: bulk issue status
+        :return:
+        {
+            "status": "successful",
+            "result": {
+                "errors": [],
+                "issues": [
+                    {
+                        "elementNumber": 0,
+                        "id": "62372",
+                        "key": "KC-6410",
+                        "self": "https://olapio.atlassian.net/rest/api/2/issue/62372"
+                    }
+                ],
+                "warnings": []
+            }
+        }
+        """
+        check_bulk_url = 'https://xray.cloud.xpand-it.com/api/v1/import/test/bulk/{}/status'.format(job_id)
+        try:
+            res = requests.get(check_bulk_url, headers=self.bulk_xray_headers)
+        except Exception:
+            self.xray_token = self.xray_auth()
+            res = requests.get(check_bulk_url, headers=self.bulk_xray_headers)
+        return json.loads(res.content)
+
+    def await_import_bulk_xray_issue(self, job_id):
+        finished_status = ['successful', 'failed', 'unsuccessful']
+        res = self.check_bulk_issue_status(job_id)
+        while res.get('status') not in finished_status:
+            print('Import status is {}, not finished, wait 20 second'.format(res.get('status')))
+            time.sleep(20)
+            res = self.check_bulk_issue_status(job_id)
+        print('Import finished, status is {}'.format(res.get('status')))
+        return res
 
     def create_xray_issue(self, project_name_key, issue_name, importance, link_issue_key,
                           components=None, is_smoketest=False, is_need_quard=False, testcase_type='主流程用例'):
@@ -142,6 +260,9 @@ class XrayIssue:
 
     def get_issue_scrum_team_id(self, issue_key):
         res = self.get_issue_info(issue_key)
+        if self.srcum_team_jira_type not in res.get('fields').keys():
+            print('{} has not scrum team property, please add it')
+            raise None
         return res.get('fields').get(self.srcum_team_jira_type).get('id')
 
     def get_issue_info(self, issue_key):
@@ -156,16 +277,17 @@ class XrayIssue:
 
 # create_xray_full_issue()
 if __name__ == '__main__':
-    X_acpt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YWMyZTFmYzA5ZWUzOTJiOTA1YzA5NzIiLCJpc3MiOiJjZGVmNjk5Ny05NTQyLTMwODktOTM0Yy00ODViMWE3MTE3N2QiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlfSwiamlyYSI6eyJpc3N1ZSI6eyJpc3N1ZXR5cGUiOnsiaWQiOiIxMDA0MyJ9LCJrZXkiOiJLQy00ODMxIiwiaWQiOiI1MDE2NCJ9LCJwcm9qZWN0Ijp7ImtleSI6IktDIiwiaWQiOiIxMDAxMiJ9fX0sImV4cCI6MTU5OTgyMDE0NCwiaWF0IjoxNTk5ODE5MjQ0fQ.pAqFTY32NMegPjM5LvLMVfI0mI3THNSDOt8D6GvormA'
+    X_acpt = ''
     xray_headers = {
         'X-acpt': X_acpt,
         'Content-Type': 'application/json;charset=UTF-8',
     }
-    jira_token = 'd2VpLnpob3VAa3lsaWdlbmNlLmlvOm8xeGh0M2owSVdheUdxWWx4bUUwNzU2Rg=='
-    xray_issue = XrayIssue(X_acpt, jira_token)
-    xray_issue.get_folder_id('KC')
-    print(xray_issue.folder_id)
-    print(xray_issue.folder_id['KC2'])
+    jira_token = ''
+    xray_issue = XrayIssue(X_acpt, jira_token,
+                           '',
+                           '')
+    res = xray_issue.xray_auth()
+    print(res)
     # project_name_key = 'QUARD'
     # issue_name = 'test_issue'
     # test_case = ''
